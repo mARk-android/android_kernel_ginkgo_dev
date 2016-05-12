@@ -3836,10 +3836,21 @@ util_est_dequeue(struct cfs_rq *cfs_rq, struct task_struct *p, bool task_sleep)
 		return;
 
 	/*
+	 * Reset EWMA on utilization increases, the moving average is used only
+	 * to smooth utilization decreases.
+	 */
+	ue.enqueued = (task_util(p) | UTIL_AVG_UNCHANGED);
+	if (sched_feat(UTIL_EST_FASTUP)) {
+		if (ue.ewma < ue.enqueued) {
+			ue.ewma = ue.enqueued;
+			goto done;
+		}
+	}
+
+	/*
 	 * Skip update of task's estimated utilization when its EWMA is
 	 * already ~1% close to its last activation value.
 	 */
-	ue.enqueued = (task_util(p) | UTIL_AVG_UNCHANGED);
 	last_ewma_diff = ue.enqueued - ue.ewma;
 	if (within_margin(last_ewma_diff, (SCHED_CAPACITY_SCALE / 100)))
 		return;
@@ -3864,6 +3875,7 @@ util_est_dequeue(struct cfs_rq *cfs_rq, struct task_struct *p, bool task_sleep)
 	ue.ewma <<= UTIL_EST_WEIGHT_SHIFT;
 	ue.ewma  += last_ewma_diff;
 	ue.ewma >>= UTIL_EST_WEIGHT_SHIFT;
+done:
 	WRITE_ONCE(p->se.avg.util_est, ue);
 
 	trace_sched_util_est_task(p, &p->se.avg);
@@ -6751,7 +6763,10 @@ boosted_cpu_util(int cpu, struct sched_walt_cpu_load *walt_load)
 
 	trace_sched_boost_cpu(cpu, util, margin);
 
-	return util + margin;
+	if (sched_feat(SCHEDTUNE_BOOST_UTIL))
+		return util + margin;
+	else
+		return util;
 }
 
 static inline unsigned long
@@ -6762,7 +6777,10 @@ boosted_task_util(struct task_struct *task)
 
 	trace_sched_boost_task(task, util, margin);
 
-	return util + margin;
+	if (sched_feat(SCHEDTUNE_BOOST_UTIL))
+		return util + margin;
+	else
+		return util;
 }
 
 static unsigned long cpu_util_without(int cpu, struct task_struct *p);
@@ -7383,16 +7401,6 @@ static int start_cpu(struct task_struct *p, bool boosted,
 	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
 	int start_cpu = -1;
 
-#ifdef CONFIG_SCHED_SEC_TASK_BOOST
-	int prio_ret = is_low_priority_task(p);
-
-	if (prio_ret == LOW_PRIO_NICE &&
-			rd->min_cap_orig_cpu != -1) {
-		start_cpu = rd->min_cap_orig_cpu;
-		return start_cpu;
-	}
-#endif
-
 	if (boosted) {
 		if (rd->mid_cap_orig_cpu != -1 &&
 		    task_fits_max(p, rd->mid_cap_orig_cpu))
@@ -7454,9 +7462,6 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 	int prev_cpu = task_cpu(p);
 	bool next_group_higher_cap = false;
 	int isolated_candidate = -1;
-#ifdef CONFIG_SCHED_SEC_TASK_BOOST
-	int prio_ret = is_low_priority_task(p);
-#endif
 
 	*backup_cpu = -1;
 
@@ -7532,18 +7537,6 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 
 			if (fbt_env->skip_cpu == i)
 				continue;
-
-#ifdef CONFIG_SCHED_SEC_TASK_BOOST
-			/*
-			 * in case of schedboost usecase
-			 * low priority tasks
-			 * are not allowed to migrate prime cluster
-			 */
-			if (!is_min_capacity_cpu(i) &&
-					(prio_ret == LOW_PRIO_NICE) &&
-					sysctl_sched_boost > 0)
-				continue;
-#endif /* CONFIG_SCHED_SEC_TASK_BOOST */
 
 			/*
 			 * p's blocked utilization is still accounted for on prev_cpu
@@ -8602,10 +8595,6 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
 	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
 	int scale = cfs_rq->nr_running >= sched_nr_latency;
 	int next_buddy_marked = 0;
-#ifdef CONFIG_SCHED_SEC_TASK_BOOST
-	int curr_cpu = cpu_of(rq);
-	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
-#endif
 
 	if (unlikely(se == pse))
 		return;
@@ -8623,12 +8612,6 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
 		set_next_buddy(pse);
 		next_buddy_marked = 1;
 	}
-
-#ifdef CONFIG_SCHED_SEC_TASK_BOOST
-	/* In case of 'current' task is in boost, don't preempt */
-	if (per_task_boost(curr) > 0)
-		return;
-#endif
 
 	/*
 	 * We can come here with TIF_NEED_RESCHED already set from new task
@@ -8658,17 +8641,6 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
 	find_matching_se(&se, &pse);
 	update_curr(cfs_rq_of(se));
 	BUG_ON(!pse);
-
-#ifdef CONFIG_SCHED_SEC_TASK_BOOST
-	/*
-	 * If task 'p' is in boost, preempt 'current' task
-	 * when current is scheduled in max_cap cpu
-	 */
-	if (rd->max_cap_orig_cpu != -1
-				&& (capacity_curr_of(rd->max_cap_orig_cpu) == capacity_curr_of(curr_cpu))
-				&& (per_task_boost(p) > 0))
-		goto preempt;
-#endif
 
 	if (wakeup_preempt_entity(se, pse) == 1) {
 		/*
@@ -9161,10 +9133,6 @@ static
 int can_migrate_task(struct task_struct *p, struct lb_env *env)
 {
 	int tsk_cache_hot;
-#ifdef CONFIG_SCHED_SEC_TASK_BOOST
-	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
-	int prio_ret = is_low_priority_task(p);
-#endif
 	lockdep_assert_held(&env->src_rq->lock);
 
 	/*
@@ -9228,25 +9196,12 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 	if (env->flags & LBF_IGNORE_PREFERRED_CLUSTER_TASKS &&
 			 !preferred_cluster(cpu_rq(env->dst_cpu)->cluster, p))
 		return 0;
+#endif
 
 	/* Don't detach task if it doesn't fit on the destination */
 	if (env->flags & LBF_IGNORE_BIG_TASKS &&
 		!task_fits_max(p, env->dst_cpu))
 		return 0;
-
-#ifdef CONFIG_SCHED_SEC_TASK_BOOST
-	/*
-	 * Don't detach low priority task from mid/little cluster to prime cluster
-	 * in schedboost use-cases.
-	 */
-	if (rd->max_cap_orig_cpu != -1
-				&& (capacity_curr_of(rd->max_cap_orig_cpu) == capacity_curr_of(env->dst_cpu))
-				&& (prio_ret == LOW_PRIO_NICE)
-				&& sysctl_sched_boost > 0){
-		return 0;
-	}
-#endif /* CONFIG_SCHED_SEC_TASK_BOOST */
-#endif
 
 	if (task_running(env->src_rq, p)) {
 		schedstat_inc(p->se.statistics.nr_failed_migrations_running);
@@ -12089,7 +12044,7 @@ static inline bool nohz_kick_needed(struct rq *rq, bool only_update)
 		return true;
 
 	if (energy_aware())
-		return false;
+		return rq->misfit_task_load > 0;
 
 	rcu_read_lock();
 	sds = rcu_dereference(per_cpu(sd_llc_shared, cpu));
