@@ -189,9 +189,6 @@ static FORCE_INLINE int LZ4_compress_generic(
 	const BYTE *base;
 	const BYTE *lowLimit;
 	const BYTE * const lowRefLimit = ip - dictPtr->dictSize;
-	const BYTE * const dictionary = dictPtr->dictionary;
-	const BYTE * const dictEnd = dictionary + dictPtr->dictSize;
-	const size_t dictDelta = dictEnd - (const BYTE *)source;
 	const BYTE *anchor = (const BYTE *) source;
 	const BYTE * const iend = ip + inputSize;
 	const BYTE * const mflimit = iend - MFLIMIT;
@@ -218,10 +215,6 @@ static FORCE_INLINE int LZ4_compress_generic(
 	case withPrefix64k:
 		base = (const BYTE *)source - dictPtr->currentOffset;
 		lowLimit = (const BYTE *)source - dictPtr->dictSize;
-		break;
-	case usingExtDict:
-		base = (const BYTE *)source - dictPtr->currentOffset;
-		lowLimit = (const BYTE *)source;
 		break;
 	}
 
