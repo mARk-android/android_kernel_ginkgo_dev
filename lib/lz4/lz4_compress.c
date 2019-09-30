@@ -259,15 +259,6 @@ static FORCE_INLINE int LZ4_compress_generic(
 					dictPtr->hashTable,
 					tableType, base);
 
-				if (dict == usingExtDict) {
-					if (match < (const BYTE *)source) {
-						refDelta = dictDelta;
-						lowLimit = dictionary;
-					} else {
-						refDelta = 0;
-						lowLimit = (const BYTE *)source;
-				}	 }
-
 				forwardH = LZ4_hashPosition(forwardIp,
 					tableType);
 
@@ -328,34 +319,9 @@ _next_match:
 		{
 			unsigned int matchCode;
 
-			if ((dict == usingExtDict)
-				&& (lowLimit == dictionary)) {
-				const BYTE *limit;
-
-				match += refDelta;
-				limit = ip + (dictEnd - match);
-
-				if (limit > matchlimit)
-					limit = matchlimit;
-
-				matchCode = LZ4_count(ip + MINMATCH,
-					match + MINMATCH, limit);
-
-				ip += MINMATCH + matchCode;
-
-				if (ip == limit) {
-					unsigned const int more = LZ4_count(ip,
-						(const BYTE *)source,
-						matchlimit);
-
-					matchCode += more;
-					ip += more;
-				}
-			} else {
-				matchCode = LZ4_count(ip + MINMATCH,
-					match + MINMATCH, matchlimit);
-				ip += MINMATCH + matchCode;
-			}
+			matchCode = LZ4_count(ip + MINMATCH,
+				match + MINMATCH, matchlimit);
+			ip += MINMATCH + matchCode;
 
 			if (outputLimited &&
 				/* Check output buffer overflow */
@@ -393,16 +359,6 @@ _next_match:
 		/* Test next position */
 		match = LZ4_getPosition(ip, dictPtr->hashTable,
 			tableType, base);
-
-		if (dict == usingExtDict) {
-			if (match < (const BYTE *)source) {
-				refDelta = dictDelta;
-				lowLimit = dictionary;
-			} else {
-				refDelta = 0;
-				lowLimit = (const BYTE *)source;
-			}
-		}
 
 		LZ4_putPosition(ip, dictPtr->hashTable, tableType, base);
 
