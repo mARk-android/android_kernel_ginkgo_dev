@@ -430,6 +430,8 @@ end:
 		sc->is_bus_enabled = false;
 	}
 
+	sc->skip_disable_before_enable = false;
+
 	if (ret && sc->parent_regulator)
 		regulator_set_voltage(sc->parent_regulator, 0, INT_MAX);
 
