@@ -45,7 +45,7 @@ echo
 $mkbootimg \
     --kernel out/arch/arm64/boot/Image.gz-dtb \
     --ramdisk $ramdisk \
-    --cmdline 'console=null androidboot.hardware=qcom androidboot.memcg=1 lpm_levels.sleep_disabled=1 video=vfb:640x400,bpp=32,memsize=3072000 msm_rtb.filter=0x237 service_locator.enable=1 swiotlb=1 androidboot.usbcontroller=a600000.dwc3 firmware_class.path=/vendor/firmware_mnt/image nokaslr printk.devkmsg=on'
+    --cmdline 'console=null androidboot.hardware=qcom androidboot.memcg=1 lpm_levels.sleep_disabled=1 video=vfb:640x400,bpp=32,memsize=3072000 msm_rtb.filter=0x237 service_locator.enable=1 swiotlb=1 androidboot.usbcontroller=a600000.dwc3 firmware_class.path=/vendor/firmware_mnt/image nokaslr printk.devkmsg=on' \
     --base           0x00000000 \
     --board          SRPRL06C005 \
     --pagesize       4096 \
