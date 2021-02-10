@@ -14,6 +14,7 @@ export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 export KBUILD_BUILD_USER=Rogue
 export KBUILD_BUILD_HOST=TheAfterlife
+export KBUILD_COMPILER_STRING="$(get_clang_version clang)"
 
 KERNEL_NAME="AfterlifeKernel_"
 KERNEL_VERSION="Mistral"
