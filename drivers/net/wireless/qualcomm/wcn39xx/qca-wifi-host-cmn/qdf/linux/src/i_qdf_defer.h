@@ -90,6 +90,19 @@ static inline QDF_STATUS __qdf_sched_work(__qdf_work_t *work)
 }
 
 /**
+ * __qdf_sched_delayed_work() - Schedule a delayed work
+ * @work: pointer to delayed work
+ * @delay: delay interval
+ * Return: none
+ */
+static inline QDF_STATUS
+__qdf_sched_delayed_work(__qdf_delayed_work_t *work, uint32_t delay)
+{
+	schedule_delayed_work(&work->dwork, msecs_to_jiffies(delay));
+	return QDF_STATUS_SUCCESS;
+}
+
+/**
  * __qdf_cancel_work() - Cancel a work
  * @work: pointer to work
  * Return: true if work was pending, false otherwise
