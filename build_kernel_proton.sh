@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KERNEL_DEFCONFIG=moxs_defconfig
+KERNEL_DEFCONFIG=mox_defconfig
 
 export HOME=/home/takemura
 export CLANG_PATH=$HOME/proton-clang/bin
