@@ -58,7 +58,7 @@ modules.builtin
 /vmlinuz
 /System.map
 /Module.markers
-
+wireguard/
 #
 # RPM spec file (make rpm-pkg)
 #
