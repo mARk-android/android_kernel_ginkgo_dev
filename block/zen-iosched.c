@@ -48,7 +48,7 @@ zen_merged_requests(struct request_queue *q, struct request *req,
 	 * and move into next position (next will be deleted) in fifo
 	 */
 	if (!list_empty(&req->queuelist) && !list_empty(&next->queuelist)) {
-		if (time_before(next->fifo_time, req->fifo_time)) {
+		if (time_before((unsigned long)next->fifo_time, (unsigned long)req->fifo_time)) {
 			list_move(&req->queuelist, &next->queuelist);
 			req->fifo_time = next->fifo_time;
 		}
@@ -91,7 +91,7 @@ zen_expired_request(struct zen_data *zdata, int ddir)
                 return NULL;
 
         rq = rq_entry_fifo(zdata->fifo_list[ddir].next);
-        if (time_after(jiffies, rq->fifo_time))
+        if (time_after(jiffies, (unsigned long)rq->fifo_time))
                 return rq;
 
         return NULL;
@@ -108,7 +108,7 @@ zen_check_fifo(struct zen_data *zdata)
         struct request *rq_async = zen_expired_request(zdata, ASYNC);
 
         if (rq_async && rq_sync) {
-        	if (time_after(rq_async->fifo_time, rq_sync->fifo_time))
+        	if (time_after((unsigned long)rq_async->fifo_time, (unsigned long)rq_sync->fifo_time))
                 	return rq_sync;
         } else if (rq_sync) {
                 return rq_sync;
@@ -254,7 +254,7 @@ static struct elv_fs_entry zen_attrs[] = {
 };
 
 static struct elevator_type iosched_zen = {
-	.ops = {
+	.ops.sq = {
 		.elevator_merge_req_fn		= zen_merged_requests,
 		.elevator_dispatch_fn		= zen_dispatch_requests,
 		.elevator_add_req_fn		= zen_add_request,
