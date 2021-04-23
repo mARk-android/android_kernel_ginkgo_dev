@@ -786,6 +786,10 @@ void dpm_resume_early(pm_message_t state)
 	mutex_lock(&dpm_list_mtx);
 	pm_transition = state;
 
+#ifdef CONFIG_BOEFFLA_WL_BLOCKER
+	pm_print_active_wakeup_sources();
+#endif
+
 	/*
 	 * Advanced the async threads upfront,
 	 * in case the starting of async threads is
