@@ -1,6 +1,6 @@
 config SECURITY_SELINUX
 	bool "NSA SELinux Support"
-	depends on SECURITY_NETWORK && AUDIT && NET && INET
+	depends on SECURITY_NETWORK && NET && INET
 	select NETWORK_SECMARK
 	default n
 	help
@@ -111,3 +111,14 @@ config SECURITY_SELINUX_SIDTAB_HASH_BITS
 	  collisions may be viewed at /sys/fs/selinux/ss/sidtab_hash_stats. If
 	  chain lengths are high (e.g. > 20) then selecting a higher value here
 	  will ensure that lookups times are short and stable.
+
+config ALWAYS_ENFORCE
+	bool "Always force enforce SElinux status"
+	depends on SECURITY_SELINUX
+	default y
+	help
+	  This option is from Samsung to make SElinux status always enforce.
+	  Generally speaking, SElinux status should be enforced, but i don't
+	  think it's good to force its status in kernel.
+
+	  If you are unsure how to answer this question, answer Y.
