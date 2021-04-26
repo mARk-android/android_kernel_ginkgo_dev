@@ -45,7 +45,7 @@
 *.xz
 Module.symvers
 modules.builtin
-
+*.wireguard-fetch-lock
 #
 # Top-level generic files
 #
@@ -58,7 +58,7 @@ modules.builtin
 /vmlinuz
 /System.map
 /Module.markers
-wireguard/
+
 #
 # RPM spec file (make rpm-pkg)
 #
