@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KERNEL_DEFCONFIG=moxes_defconfig
+KERNEL_DEFCONFIG=moxs_defconfig
 
 export HOME=/home/takemura
 export CLANG_PATH=$HOME/proton-clang/bin
@@ -13,10 +13,10 @@ export DTC_EXT=$(pwd)/tools/dtc
 export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 export KBUILD_BUILD_USER=Rogue
-export KBUILD_BUILD_HOST=TheMoxes
+export KBUILD_BUILD_HOST=TheMox
 
-MOXES_KERNEL_NAME="MoxesKernel_"
-MOXES_KERNEL_VERSION="v1.1"
+MOXES_KERNEL_NAME="MoxKernel_"
+MOXES_KERNEL_VERSION="R1"
 ARASAKA_BUILD_DATE="_$(date +%d.%m.%y-%H:%M)"
 
 IMGNAME=$MOXES_KERNEL_NAME$MOXES_KERNEL_VERSION$ARASAKA_BUILD_DATE
