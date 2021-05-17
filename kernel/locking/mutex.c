@@ -173,6 +173,30 @@ static inline bool __mutex_waiter_is_first(struct mutex *lock, struct mutex_wait
 	return list_first_entry(&lock->wait_list, struct mutex_waiter, list) == waiter;
 }
 
+static void
+__mutex_remove_waiter(struct mutex *lock, struct mutex_waiter *waiter)
+{
+	list_del(&waiter->list);
+	if (likely(list_empty(&lock->wait_list)))
+		__mutex_clear_flag(lock, MUTEX_FLAGS);
+
+	debug_mutex_remove_waiter(lock, waiter, current);
+}
+
+/*
+ * Add @waiter to a given location in the lock wait_list and set the
+ * FLAG_WAITERS flag if it's the first waiter.
+ */
+static void __sched
+__mutex_add_waiter(struct mutex *lock, struct mutex_waiter *waiter,
+		   struct list_head *list)
+{
+	debug_mutex_add_waiter(lock, waiter, current);
+	list_add_tail(&waiter->list, list);
+	if (__mutex_waiter_is_first(lock, waiter))
+		__mutex_set_flag(lock, MUTEX_FLAG_WAITERS);
+}
+
 /*
  * Give up ownership to a specific task, when @task = NULL, this is equivalent
  * to a regular unlock. Sets PICKUP on a handoff, clears HANDOF, preserves
@@ -868,7 +892,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
 acquired:
 	__set_current_state(TASK_RUNNING);
 
-	mutex_remove_waiter(lock, &waiter, current);
+	__mutex_remove_waiter(lock, &waiter);
 	if (likely(list_empty(&lock->wait_list)))
 		__mutex_clear_flag(lock, MUTEX_FLAGS);
 
@@ -887,7 +911,7 @@ skip_wait:
 
 err:
 	__set_current_state(TASK_RUNNING);
-	mutex_remove_waiter(lock, &waiter, current);
+	__mutex_remove_waiter(lock, &waiter);
 err_early_backoff:
 	spin_unlock(&lock->wait_lock);
 	debug_mutex_free_waiter(&waiter);
