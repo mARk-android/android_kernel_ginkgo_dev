@@ -7157,6 +7157,7 @@ static inline int select_idle_smt(struct task_struct *p, struct sched_domain *sd
  */
 static int select_idle_cpu(struct task_struct *p, struct sched_domain *sd, int target)
 {
+	struct cpumask *cpus = this_cpu_cpumask_var_ptr(select_idle_mask);
 	struct sched_domain *this_sd;
 	u64 avg_cost, avg_idle;
 	u64 time, cost;
@@ -7997,13 +7998,13 @@ static inline void alloc_eenv(void)
 	int cpu;
 	int cpu_count = num_possible_cpus();
 
-	cpumask_and(cpus, sched_domain_span(sd), &p->cpus_allowed);
-
-	for_each_cpu_wrap(cpu, cpus, target) {
-		if (!--nr)
-			return -1;
-		if (idle_cpu(cpu))
-			break;
+	for_each_possible_cpu(cpu) {
+		struct energy_env *eenv = &per_cpu(eenv_cache, cpu);
+		eenv->cpu = kmalloc(sizeof(struct eenv_cpu) * cpu_count, GFP_KERNEL);
+		eenv->eenv_cpu_count = cpu_count;
+#ifdef DEBUG_EENV_DECISIONS
+		eenv->debug = (struct _eenv_debug *)kmalloc(eenv_debug_size(), GFP_KERNEL);
+#endif
 	}
 }
 
