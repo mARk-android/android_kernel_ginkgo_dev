@@ -545,7 +545,6 @@ EXPORT_SYMBOL(LZ4_decompress_fast_usingDict);
 EXPORT_SYMBOL(lz4_decompress_unknownoutputsize);
 EXPORT_SYMBOL(lz4_decompress);
 
-#ifndef STATIC
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DESCRIPTION("LZ4 decompressor");
 #endif

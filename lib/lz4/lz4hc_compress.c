@@ -786,6 +786,7 @@ int lz4hc_compress(const unsigned char *src, size_t src_len,
 	else
 		return 0;
 }
+EXPORT_SYMBOL(lz4hc_compress);
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DESCRIPTION("LZ4 HC compressor");

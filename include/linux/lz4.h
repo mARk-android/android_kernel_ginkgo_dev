@@ -688,21 +688,30 @@ int LZ4_decompress_fast_continue(LZ4_streamDecode_t *LZ4_streamDecode,
  *	(necessarily <= maxDecompressedSize)
  *	or a negative result in case of error
  */
-int LZ4_decompress_safe(const char *source, char *dest, int compressedSize,
-	int maxDecompressedSize);
-
-/*-************************************************************************
- *	LZ4 HC Compression
- **************************************************************************/
+int LZ4_decompress_safe_usingDict(const char *source, char *dest,
+	int compressedSize, int maxDecompressedSize, const char *dictStart,
+	int dictSize);
 
 /**
- * LZ4_compress_HC() - Compress data from `src` into `dst`, using HC algorithm
- * @src: source address of the original data
- * @dst: output buffer address of the compressed data
- * @srcSize: size of the input data. Max supported value is LZ4_MAX_INPUT_SIZE
- * @dstCapacity: full or partial size of buffer 'dst',
- *	which must be already allocated
- * @compressionLevel: Recommended values are between 4 and 9, although any
- *	value between 1 and LZ4HC_MAX_CLEVEL will work.
- *	Values >LZ4HC_MAX_CLEVEL behave the same as 16.
- * @wrkmem: address of the working memory.
+ * LZ4_decompress_fast_usingDict() - Same as LZ4_setStreamDecode()
+ *	followed by LZ4_decompress_fast_continue()
+ * @source: source address of the compressed data
+ * @dest: output buffer address of the uncompressed data
+ *	which must be already allocated with 'originalSize' bytes
+ * @originalSize: is the original and therefore uncompressed size
+ * @dictStart: pointer to the start of the dictionary in memory
+ * @dictSize: size of dictionary
+ *
+ * These decoding function works the same as
+ * a combination of LZ4_setStreamDecode() followed by
+ * LZ4_decompress_safe_continue()
+ * It is stand-alone, and don'tn eed a LZ4_streamDecode_t structure.
+ *
+ * Return: number of bytes decompressed into destination buffer
+ *	(necessarily <= maxDecompressedSize)
+ *	or a negative result in case of error
+ */
+int LZ4_decompress_fast_usingDict(const char *source, char *dest,
+	int originalSize, const char *dictStart, int dictSize);
+
+#endif

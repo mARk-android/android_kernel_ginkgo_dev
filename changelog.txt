@@ -1,0 +1,34 @@
+EnvoyKernel v1 (EK1) changelog:
+- Based on Android R source A705FNXXU5DUC6 (DUC6)
+- Built using Proton-clang 13 and -O3 optimizations
+- All TCP Congestion algorithms available (BBR set as default)
+- Added Boeffla_Wakelock driver
+- Added vDSO32
+- Added latest Wireguard (1.0.20210424)
+- Added Maple, ZEN, SIO and FIOPS I/O schedulers (cfq set as default)
+- Added blu_schedutil governor
+- Added sched tweaks for smoother experience
+- Added spin lock function family
+- Added some CPU optimizations
+- Added some tweaks on GPU
+- Added some tweaks to TCP
+- Enabled lz4 and updated decompressor module
+- Disabled avb 2.0 and DM-verity checks
+- Patched some Safetynet flags
+- Removed Samsung security features
+- Removed VLA
+- Upstreamed to latest linux kernel 4.14.233
+
+###############################################################################
+
+EnvoyKernel v2 (EK2) changelog:
+- Added more -O3 optimizations
+- Added auto-backup of previous boot.img
+- Built using latest Proton-clang 13
+- Enabled BPF-JIT / BPF
+- Enabled Jump labels
+- Enabled XOR Blocks
+- Fetched latest Wireguard (1.0.20210606)
+- Switched to SRANDOM driver
+- Updated LZ4 compressor and decompressor
+- Upstreamed to latest linux kernel 4.14.237

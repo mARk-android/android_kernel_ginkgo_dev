@@ -202,7 +202,6 @@ static FORCE_INLINE unsigned int LZ4_count(
 		pMatch += 4;
 	}
 #endif
-}
 
 	if ((pIn < (pInLimit - 1))
 		&& (LZ4_read16(pMatch) == LZ4_read16(pIn))) {

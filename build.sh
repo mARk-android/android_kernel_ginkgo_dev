@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KERNEL_DEFCONFIG=krone_defconfig
+KERNEL_DEFCONFIG=envoy_defconfig
 
 export HOME=/home/$USER
 export CLANG_PATH=$HOME/proton-clang/bin
@@ -10,8 +10,8 @@ export SUBARCH=arm64
 export DTC_EXT=$(pwd)/tools/dtc
 export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-export KBUILD_BUILD_USER=Krone
-export KBUILD_BUILD_HOST=K1
+export KBUILD_BUILD_USER=Envoy
+export KBUILD_BUILD_HOST=EK2
 
 # Show compilation time
 START=$(date +"%s")
