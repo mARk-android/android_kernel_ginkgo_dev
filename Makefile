@@ -218,7 +218,9 @@ export srctree objtree VPATH
 # of make so .config is not included in this case either (for *config).
 
 version_h := include/generated/uapi/linux/version.h
-old_version_h := include/linux/version.h
+
+# mARk 31-03-2021  kbuild: stop removing stale <linux/version.h> file 
+#old_version_h := include/linux/version.h
 
 no-dot-config-targets := clean mrproper distclean \
 			 cscope gtags TAGS tags help% %docs check% coccicheck \
@@ -352,6 +354,12 @@ hdr-arch  := $(SRCARCH)
 KCONFIG_CONFIG	?= .config
 export KCONFIG_CONFIG
 
+
+# Default file for 'make defconfig'. This may be overridden by arch-Makefile.
+# mARk 31-03-2021
+export KBUILD_DEFCONFIG := defconfig
+
+
 # SHELL used by kbuild
 CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
@@ -363,9 +371,11 @@ HOST_LFS_LIBS := $(shell getconf LFS_LIBS 2>/dev/null)
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 \
+
+# mARk 31-03-2021 change -O2 to -O3
+HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 \
 		-fomit-frame-pointer -std=gnu89 -pipe $(HOST_LFS_CFLAGS)
-HOSTCXXFLAGS := -O2 $(HOST_LFS_CFLAGS)
+HOSTCXXFLAGS := -O3 $(HOST_LFS_CFLAGS)
 HOSTLDFLAGS  := $(HOST_LFS_LDFLAGS)
 HOST_LOADLIBES := $(HOST_LFS_LIBS)
 
@@ -662,24 +672,29 @@ export CFLAGS_GCOV CFLAGS_KCOV
 
 # Make toolchain changes before including arch/$(SRCARCH)/Makefile to ensure
 # ar/cc/ld-* macros return correct values.
-ifdef CONFIG_LD_GOLD
+ifdef CONFIG_LTO_CLANG
+ifneq ($(ld-name),lld)
+# use GNU gold with LLVMgold for LTO linking, and LD for vmlinux_link
 LDFINAL_vmlinux := $(LD)
 LD		:= $(LDGOLD)
-endif
-ifdef CONFIG_LD_LLD
-LD		:= $(LDLLD)
-endif
-
-ifdef CONFIG_LTO_CLANG
-# use GNU gold with LLVMgold or LLD for LTO linking, and LD for vmlinux_link
-ifeq ($(ld-name),gold)
 LDFLAGS		+= -plugin LLVMgold.so
 endif
+
 # use llvm-ar for building symbol tables from IR files, and llvm-dis instead
 # of objdump for processing symbol versions and exports
+ifneq ($(findstring llvm-ar,$(AR)),)
+LLVM_AR		:= $(AR)
+else
 LLVM_AR		:= llvm-ar
-LLVM_DIS	:= llvm-dis
-export LLVM_AR LLVM_DIS
+endif
+
+ifneq ($(findstring llvm-nm,$(NM)),)
+LLVM_NM		:= $(NM)
+else
+LLVM_NM		:= llvm-nm
+endif
+
+export LLVM_AR LLVM_NM
 endif
 
 # The arch Makefile can set ARCH_{CPP,A,C}FLAGS to override the default
@@ -796,6 +811,8 @@ KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
 endif
 
 ifeq ($(ld-name),lld)
+LDFLAGS += --lto-O3
+else
 KBUILD_LDFLAGS += -O3
 endif
 
@@ -1086,7 +1103,7 @@ ifdef CONFIG_MODULE_COMPRESS
     mod_compress_cmd = gzip -n -f
   endif # CONFIG_MODULE_COMPRESS_GZIP
   ifdef CONFIG_MODULE_COMPRESS_XZ
-    mod_compress_cmd = xz -f
+    mod_compress_cmd = $(XZ) --lzma2=dict=2MiB -f
   endif # CONFIG_MODULE_COMPRESS_XZ
 endif # CONFIG_MODULE_COMPRESS
 export mod_compress_cmd
@@ -1306,7 +1323,7 @@ ifdef CONFIG_LTO_CLANG
   endif
   ifneq ($(ld-name), lld)
     ifneq ($(call gold-ifversion, -ge, 112000000, y), y)
-	@echo Cannot use CONFIG_LTO_CLANG: requires LLD or GNU gold 1.12 or later >&2 && exit 1
+	@echo Cannot use CONFIG_LTO_CLANG: requires LTO, LLD or GNU gold 1.12 or later >&2 && exit 1
     endif
   endif
 endif
@@ -1965,3 +1982,4 @@ FORCE:
 # Declare the contents of the .PHONY variable as phony.  We keep that
 # information in a variable so we can use it in if_changed and friends.
 .PHONY: $(PHONY)
+
