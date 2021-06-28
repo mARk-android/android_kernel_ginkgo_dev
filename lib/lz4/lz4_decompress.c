@@ -308,5 +308,4 @@ int LZ4_decompress_fast(const char *source, char *dest, int originalSize)
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DESCRIPTION("LZ4 decompressor");
-#endif
 

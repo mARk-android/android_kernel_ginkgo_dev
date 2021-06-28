@@ -220,7 +220,7 @@ export srctree objtree VPATH
 version_h := include/generated/uapi/linux/version.h
 
 # mARk 31-03-2021  kbuild: stop removing stale <linux/version.h> file 
-#old_version_h := include/linux/version.h
+# old_version_h := include/linux/version.h
 
 no-dot-config-targets := clean mrproper distclean \
 			 cscope gtags TAGS tags help% %docs check% coccicheck \
@@ -672,29 +672,30 @@ export CFLAGS_GCOV CFLAGS_KCOV
 
 # Make toolchain changes before including arch/$(SRCARCH)/Makefile to ensure
 # ar/cc/ld-* macros return correct values.
-ifdef CONFIG_LTO_CLANG
-ifneq ($(ld-name),lld)
-# use GNU gold with LLVMgold for LTO linking, and LD for vmlinux_link
+ifdef CONFIG_LD_GOLD
 LDFINAL_vmlinux := $(LD)
 LD		:= $(LDGOLD)
+endif
+ifdef CONFIG_LD_LLD
+LD		:= $(LDLLD)
+endif
+
+ifdef CONFIG_LTO_CLANG
+# use GNU gold with LLVMgold or LLD for LTO linking, and LD for vmlinux_link
+ifeq ($(ld-name),gold)
 LDFLAGS		+= -plugin LLVMgold.so
 endif
-
 # use llvm-ar for building symbol tables from IR files, and llvm-dis instead
 # of objdump for processing symbol versions and exports
-ifneq ($(findstring llvm-ar,$(AR)),)
-LLVM_AR		:= $(AR)
-else
 LLVM_AR		:= llvm-ar
-endif
-
 ifneq ($(findstring llvm-nm,$(NM)),)
 LLVM_NM		:= $(NM)
 else
 LLVM_NM		:= llvm-nm
+export LLVM_NM
 endif
-
-export LLVM_AR LLVM_NM
+LLVM_DIS	:= llvm-dis
+export LLVM_AR LLVM_DIS
 endif
 
 # The arch Makefile can set ARCH_{CPP,A,C}FLAGS to override the default
@@ -813,6 +814,7 @@ endif
 ifeq ($(ld-name),lld)
 LDFLAGS += --lto-O3
 else
+LDFLAGS += -O3
 KBUILD_LDFLAGS += -O3
 endif
 
@@ -1383,7 +1385,8 @@ endef
 
 $(version_h): $(srctree)/Makefile FORCE
 	$(call filechk,version.h)
-	$(Q)rm -f $(old_version_h)
+# mARk 31-03-2021  kbuild: stop removing stale <linux/version.h> file 	
+#	$(Q)rm -f $(old_version_h)
 
 include/generated/utsrelease.h: include/config/kernel.release FORCE
 	$(call filechk,utsrelease.h)
@@ -1478,7 +1481,13 @@ endif
 PHONY += modules
 modules: $(vmlinux-dirs) $(if $(KBUILD_BUILTIN),vmlinux) modules.builtin
 	$(Q)$(AWK) '!x[$$0]++' $(vmlinux-dirs:%=$(objtree)/%/modules.order) > $(objtree)/modules.order
-	@$(kecho) '  Building modules, stage 2.';
+	@$(kecho)  ' \n ';
+	@$(kecho)  ' \n ';
+	@$(kecho)  '  ===============================';
+	@$(kecho)  '  == Building modules, stage 2 ==';
+	@$(kecho)  '  ===============================';
+	@$(kecho)  ' \n ';
+
 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modpost
 
 modules.builtin: $(vmlinux-dirs:%=%/modules.builtin)
@@ -1982,4 +1991,3 @@ FORCE:
 # Declare the contents of the .PHONY variable as phony.  We keep that
 # information in a variable so we can use it in if_changed and friends.
 .PHONY: $(PHONY)
-
