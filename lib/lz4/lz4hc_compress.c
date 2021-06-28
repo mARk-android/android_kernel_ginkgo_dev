@@ -763,7 +763,7 @@ int LZ4_saveDictHC(
 	}
 	return dictSize;
 }
-EXPORT_SYMBOL(LZ4_saveDictHC);
+EXPORT_SYMBOL(lz4hc_compress);
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DESCRIPTION("LZ4 HC compressor");
