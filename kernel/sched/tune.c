@@ -661,10 +661,10 @@ int schedtune_prefer_idle(struct task_struct *p)
 static u64
 prefer_idle_read(struct cgroup_subsys_state *css, struct cftype *cft)
 {
+	struct schedtune *st = css_st(css);
+	
 	if (is_battery_saver_on())
 		return 0;
-
-	struct schedtune *st = css_st(css);
 
 	return st->prefer_idle;
 }
@@ -682,10 +682,10 @@ prefer_idle_write(struct cgroup_subsys_state *css, struct cftype *cft,
 static s64
 boost_read(struct cgroup_subsys_state *css, struct cftype *cft)
 {
+	struct schedtune *st = css_st(css);
+	
 	if (is_battery_saver_on())
 		return 0;
-
-	struct schedtune *st = css_st(css);
 
 	return st->boost;
 }
