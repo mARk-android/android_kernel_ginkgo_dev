@@ -110,7 +110,7 @@ if [ -f "$out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "$out/arch/arm64/boot/dtbo
 	    echo -e ${bldcya}"\nKernel compiled succesfully! \n    Zipping and packing modules... \n"${txtrst};
 	    ZIPNAME="boot•mARkOS•$VERSION•MiuiQ•A10•HMNote8•8T-$(date '+%Y%m%d-%H%M').zip"    
     if [ ! -d AnyKernel3 ]; then
-	    git clone -q https://github.com/osm0sis/AnyKernel3.git
+	    git clone -q https://github.com/mARk-android/AnyKernel3.git
     fi;
     
     mv -f $out/arch/arm64/boot/Image.gz-dtb AnyKernel3
