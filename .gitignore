@@ -129,5 +129,8 @@ all.config
 # fetched Android config fragments
 kernel/configs/android-*.cfg
 
-# build out dir
+# build out dir and tmp files
 out/
+_BUILD_KERNEL/
+net/wireguard/
+build_vers
