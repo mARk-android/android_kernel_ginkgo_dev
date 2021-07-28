@@ -1,6 +1,7 @@
 #!/bin/bash
 #
-# Root method chooser for the Resurrection Remix ROM
+# Shell script to build kernel with mARk-clang-13
+# git clone https://github.com/mARk-android/toolchain_mARkclang.git
 # Specify colors utilized in the terminal
     red=$(tput setaf 1)             #  red
     grn=$(tput setaf 2)             #  green
@@ -24,17 +25,21 @@
     blink=$(tput blink)
     dim=$(tput dim)
     clear=$(tput clear)
-#    cup=$(tput cup 14 6)
 
-
+# clone mARk-clang
+if ! [ -d "$HOME/toolchain/clang13o" ]; then
+    git clone https://github.com/mARk-android/toolchain_mARkclang.git $HOME/toolchain/clang13o
+else
+    echo "${bold}mARk clang 13 is already!${normal}"
+fi
 
 
 # Extra var
-    now=$(date +%Y%m%d-%H00)
+    now=$(date +%Y%m%d-%H%M)
     echo build_vers >> build_vers
-    export HASH=$( shuf -er -n29   {a..z} {0..9} | paste -sd "")
+    export HASH=$( shuf -er -n28   {a..z} {0..9} | paste -sd "")
     export LICZNIK=$( cat -n build_vers | tail -1 | awk '{print $1}')
-    VERSION=4.14.241-ro2
+    VERSION=4.14.240-${LICZNIK}
 
 
 
@@ -44,7 +49,7 @@
     sed  -i "1i\hash: ${HASH}"                           AnyKernel3/changelog
     sed  -i '1i\=======================================' AnyKernel3/changelog
     sed  -i "1i\Date: ${now}          ~~~~~~ ^"          AnyKernel3/changelog
-    sed  -i '1i\mARkOS kernel custom Q build-'${VERSION} AnyKernel3/changelog
+    sed  -i '1i\mARkOS kernel Q MIUI build-'${VERSION}   AnyKernel3/changelog
     sed  -i '1i\=======================================' AnyKernel3/changelog
     
     cp AnyKernel3/changelog changelog.txt   
@@ -52,7 +57,7 @@
 # Bash HEADER   
     echo -e "\n"
     echo -e ${txtbld}"\n  Starting compiling $VERSION\n"${txtrst};
-    echo -e '  hash: '${HASH};
+    echo -e '  commit: '${HASH};
     echo -e ' \n ';
 
 
@@ -63,13 +68,12 @@ CONFIG=vendor/ginkgo-perf_defconfig
 KERNEL_DIR=$(pwd)
 PARENT_DIR="$(dirname "$KERNEL_DIR")"
 KERN_IMG="$KERNEL_DIR/out/arch/arm64/boot/Image.gz-dtb"
-STRIP="aarch64-linux-gnu-strip"
 
 export KBUILD_BUILD_USER="mARk"
 export KBUILD_BUILD_HOST="linux"
-export PATH="$HOME/toolchain/clang13ro2/bin:$PATH"
-export LD_LIBRARY_PATH="$HOME/toolchain/clang13ro2/lib:$LD_LIBRARY_PATH"
-export KBUILD_COMPILER_STRING="$($HOME/toolchain/clang13ro2/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
+export PATH="$HOME/toolchain/clang13o/bin:$PATH"
+export LD_LIBRARY_PATH="$HOME/toolchain/clang13o/lib:$LD_LIBRARY_PATH"
+export KBUILD_COMPILER_STRING="$($HOME/toolchain/clang13o/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
 export out=out
 
 # Functions          ™       ™
@@ -93,8 +97,6 @@ start_build () {
 # Build kernel 16.05.2021 02:33:01 Image.gz-dtb dtbo.img
     make O=$out ARCH=arm64 $CONFIG > /dev/null
     
-#    echo -e ${dim}"Compiling with "${txtbld}${grn}${blink}"$KBUILD_COMPILER_STRING"${txtrst};
-
     echo -e ' \n ';
     echo -e ${bldcya}'  ========================================='${txtrst};
     echo -e ${bldcya}'  == '${cya}'Compiling with '${txtrst}${bldylw}${blink}"$KBUILD_COMPILER_STRING" ${txtrst}${bldcya}'=='${txtrst};
@@ -103,18 +105,12 @@ start_build () {
     echo -e ${dim}"\n"
     start_build
     echo -e "\n"${txtrst};
-#    echo -e ${clear}"\n"${txtrst};
     
 if [ -f "$out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "$out/arch/arm64/boot/dtbo.img" ]; then
-
 	    echo -e ${bldcya}"\nKernel compiled succesfully! \n    Zipping and packing modules... \n"${txtrst};
-	    
-	    ZIPNAME="boot•mARkOS•$VERSION•custom•A10•HMNote8•8T-$(date '+%Y%m%d-%H'00).zip"    
-	    #ZIPNAME="boot•mARkOS•$VERSION•MiuiQ•A10•HMNote8•8T-$(date '+%Y%m%d-%H%M').zip"          
-	                
+	    ZIPNAME="boot•mARkOS•$VERSION•MiuiQ•A10•HMNote8•8T-$(date '+%Y%m%d-%H%M').zip"    
     if [ ! -d AnyKernel3 ]; then
-	    
-	    git clone -q https://github.com/zhantech/AnyKernel3.git
+	    git clone -q https://github.com/mARk-android/AnyKernel3.git
     fi;
     
     mv -f $out/arch/arm64/boot/Image.gz-dtb AnyKernel3
@@ -134,11 +130,11 @@ if [ -f "$out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "$out/arch/arm64/boot/dtbo
     
     zip -r9 "$KERNEL_DIR/_BUILD_KERNEL/$ZIPNAME" *
     cd ..
-	# rm -rf AnyKernel3 
-        rm AnyKernel3/modules/vendor/lib/modules/*.ko
-        rm AnyKernel3/modules.*
-        rm AnyKernel3/Image.gz-dtb
-        rm AnyKernel3/dtbo.img
+	rm -rf AnyKernel3 
+        #rm AnyKernel3/modules/vendor/lib/modules/*.ko
+        #rm AnyKernel3/modules.*
+        #rm AnyKernel3/Image.gz-dtb
+        #rm AnyKernel3/dtbo.img
 
     echo -e ${bldgrn}"\nZipping succesfully! \n"${txtrst};
     echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
