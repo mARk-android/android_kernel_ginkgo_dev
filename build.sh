@@ -34,7 +34,7 @@
     echo build_vers >> build_vers
     export HASH=$( shuf -er -n29   {a..z} {0..9} | paste -sd "")
     export LICZNIK=$( cat -n build_vers | tail -1 | awk '{print $1}')
-    VERSION=4.14.241-ro2
+    VERSION=4.14.242
 
 
 
@@ -67,9 +67,9 @@ STRIP="aarch64-linux-gnu-strip"
 
 export KBUILD_BUILD_USER="mARk"
 export KBUILD_BUILD_HOST="linux"
-export PATH="$HOME/toolchain/clang13ro2/bin:$PATH"
-export LD_LIBRARY_PATH="$HOME/toolchain/clang13ro2/lib:$LD_LIBRARY_PATH"
-export KBUILD_COMPILER_STRING="$($HOME/toolchain/clang13ro2/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
+export PATH="$HOME/toolchain/clang14/bin:$PATH"
+export LD_LIBRARY_PATH="$HOME/toolchain/clang14/lib:$LD_LIBRARY_PATH"
+export KBUILD_COMPILER_STRING="$($HOME/toolchain/clang14/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
 export out=out
 
 # Functions          ™       ™
