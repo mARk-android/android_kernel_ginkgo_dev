@@ -114,7 +114,7 @@ if [ -f "$out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "$out/arch/arm64/boot/dtbo
 	                
     if [ ! -d AnyKernel3 ]; then
 	    
-	    git clone -q https://github.com/zhantech/AnyKernel3.git
+	    git clone -q https://github.com/mark-android/AnyKernel3.git
     fi;
     
     mv -f $out/arch/arm64/boot/Image.gz-dtb AnyKernel3
