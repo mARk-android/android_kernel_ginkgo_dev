@@ -34,7 +34,7 @@
     echo build_vers >> build_vers
     export HASH=$( shuf -er -n29   {a..z} {0..9} | paste -sd "")
     export LICZNIK=$( cat -n build_vers | tail -1 | awk '{print $1}')
-    VERSION=4.14.242
+    VERSION=4.14.244
 
 
 
