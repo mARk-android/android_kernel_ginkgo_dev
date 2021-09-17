@@ -1776,6 +1776,9 @@ static void lim_process_delba_req(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 	uint8_t peer_id;
 	void *soc = cds_get_context(QDF_MODULE_ID_SOC);
 	void *peer, *pdev;
+	/*tpDphHashNode sta_ds;
+	uint16_t aid, buff_size;
+	bool he_cap = false;*/
 
 	pdev = cds_get_context(QDF_MODULE_ID_TXRX);
 	if (!pdev) {
