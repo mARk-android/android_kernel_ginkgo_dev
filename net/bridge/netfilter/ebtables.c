@@ -1819,9 +1819,12 @@ static int compat_table_info(const struct ebt_table_info *info,
 	int ret;
 
 	newinfo->entries_size = size;
- //	ret = ebt_compat_init_offsets(info->nentries);
-	if (ret)
-		return ret;
+	if (info->nentries) {
+		int ret = xt_compat_init_offsets(NFPROTO_BRIDGE,
+						 info->nentries);
+		if (ret)
+			return ret;
+	}
 
 	ebt_entry_foreach(entry, entries, size) {
 		ret = compat_calc_entry(entry, info, entries, newinfo);
