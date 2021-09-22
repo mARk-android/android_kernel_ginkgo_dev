@@ -1819,7 +1819,7 @@ static int compat_table_info(const struct ebt_table_info *info,
 	int ret;
 
 	newinfo->entries_size = size;
-	ret = ebt_compat_init_offsets(info->nentries);
+ //	ret = ebt_compat_init_offsets(info->nentries);
 	if (ret)
 		return ret;
 
@@ -2198,9 +2198,7 @@ static int compat_copy_entries(unsigned char *data, unsigned int size_user,
 	if (size_remaining)
 		return -EINVAL;
 
-	if (size_remaining)
-		return -EINVAL;
-
+	WARN_ON(size_remaining);
 	return state->buf_kern_offset;
 }
 
