@@ -152,6 +152,11 @@ static int six_hundred_forty_kb = 640 * 1024;
 #endif
 static int two_hundred_fifty_five = 255;
 
+#ifdef CONFIG_SCHED_WALT
+const int sched_user_hint_max = 1000;
+static unsigned int ns_per_sec = NSEC_PER_SEC;
+static unsigned int one_hundred_thousand = 100000;
+#endif
 /* this is needed for the proc_doulongvec_minmax of vm_dirty_bytes */
 static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
 
@@ -307,12 +312,11 @@ static struct ctl_table sysctl_base_table[] = {
 	},
 	{ }
 };
-#ifdef CONFIG_SCHED_DEBUG
+
 static int min_sched_granularity_ns = 100000;		/* 100 usecs */
 static int max_sched_granularity_ns = NSEC_PER_SEC;	/* 1 second */
 static int min_wakeup_granularity_ns;			/* 0 usecs */
 static int max_wakeup_granularity_ns = NSEC_PER_SEC;	/* 1 second */
-#endif
 #ifdef CONFIG_SMP
 static int min_sched_tunable_scaling = SCHED_TUNABLESCALING_NONE;
 static int max_sched_tunable_scaling = SCHED_TUNABLESCALING_END-1;
@@ -328,6 +332,13 @@ static int max_extfrag_threshold = 1000;
 #endif
 
 static struct ctl_table kern_table[] = {
+	{
+		.procname	= "sched_child_runs_first",
+		.data		= &sysctl_sched_child_runs_first,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec,
+	},
 #if defined(CONFIG_PREEMPT_TRACER) || defined(CONFIG_DEBUG_PREEMPT)
 	{
 		.procname       = "preemptoff_tracing_threshold_ns",
@@ -347,6 +358,24 @@ static struct ctl_table kern_table[] = {
 	},
 #endif
 #ifdef CONFIG_SCHED_WALT
+	{
+		.procname	= "sched_user_hint",
+		.data           = &sysctl_sched_user_hint,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= walt_proc_user_hint_handler,
+		.extra1		= &zero,
+		.extra2		= (void *)&sched_user_hint_max,
+	},
+	{
+		.procname	= "sched_window_stats_policy",
+		.data		= &sysctl_sched_window_stats_policy,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler   = proc_dointvec_minmax,
+		.extra1		= &zero,
+		.extra2		= &four,
+	},
 	{
 		.procname       = "sched_cpu_high_irqload",
 		.data           = &sysctl_sched_cpu_high_irqload,
@@ -442,6 +471,24 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= sched_updown_migrate_handler,
 	},
 	{
+		.procname	= "sched_latency_ns",
+		.data		= &sysctl_sched_latency,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= sched_proc_update_handler,
+		.extra1		= &min_sched_granularity_ns,
+		.extra2		= &max_sched_granularity_ns,
+	},
+	{
+		.procname	= "sched_wakeup_granularity_ns",
+		.data		= &sysctl_sched_wakeup_granularity,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= sched_proc_update_handler,
+		.extra1		= &min_wakeup_granularity_ns,
+		.extra2		= &max_wakeup_granularity_ns,
+	},
+	{
 		.procname	= "sched_upmigrate_boosted",
 		.data		= &sysctl_sched_capacity_margin_up_boosted,
 		.maxlen		= sizeof(unsigned int) * MAX_MARGIN_LEVELS,
@@ -500,13 +547,13 @@ static struct ctl_table kern_table[] = {
 		.extra2		= &max_sched_granularity_ns,
 	},
 	{
-		.procname	= "sched_wakeup_granularity_ns",
-		.data		= &sysctl_sched_wakeup_granularity,
+		.procname	= "sched_latency_ns",
+		.data		= &sysctl_sched_latency,
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
 		.proc_handler	= sched_proc_update_handler,
-		.extra1		= &min_wakeup_granularity_ns,
-		.extra2		= &max_wakeup_granularity_ns,
+		.extra1		= &min_sched_granularity_ns,
+		.extra2		= &max_sched_granularity_ns,
 	},
 	{
 		.procname	= "sched_sync_hint_enable",
@@ -521,6 +568,15 @@ static struct ctl_table kern_table[] = {
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
+	},
+	{
+		.procname	= "sched_wakeup_granularity_ns",
+		.data		= &sysctl_sched_wakeup_granularity,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= sched_proc_update_handler,
+		.extra1		= &min_wakeup_granularity_ns,
+		.extra2		= &max_wakeup_granularity_ns,
 	},
 #ifdef CONFIG_SMP
 	{
@@ -3453,11 +3509,11 @@ int sched_boost_handler(struct ctl_table *table, int write,
 		return ret;
 
 	if (*data == 1) {
-		do_stune_boost("top-app", 20, &boost_slot_ta);
-		do_stune_boost("foreground", 5, &boost_slot_fg);
+		do_stune_boost("top-app", 5, &boost_slot_ta);
+		do_stune_boost("foreground", 2, &boost_slot_fg);
 	} else if (*data == 3) {
-		do_stune_boost("top-app", 10, &boost_slot_ta);
-		do_stune_boost("foreground", 1, &boost_slot_fg);
+		do_stune_boost("top-app", 3, &boost_slot_ta);
+		do_stune_boost("foreground", 0, &boost_slot_fg);
 	} else {
 		reset_stune_boost("top-app", boost_slot_ta);
 		reset_stune_boost("foreground", boost_slot_fg);
