@@ -10534,23 +10534,6 @@ typedef struct {
 } wmi_ctrl_path_dfs_channel_stats_struct;
 
 typedef struct {
-    /** TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_ctrl_path_dfs_channel_stats_struct*/
-    A_UINT32 tlv_header;
-    /** pdev_id for identifying the PHY */
-    A_UINT32 pdev_id;
-    /** nol element num */
-    A_UINT32 nol;
-    /** Channel in MHz */
-    A_UINT32 channel;
-
-    /** Channel width in MHz */
-    A_UINT32 chwidth;
-
-    /** Time left for the channel to remain in NOL list (in seconds) */
-    A_UINT32 timeleft;
-} wmi_ctrl_path_dfs_channel_stats_struct;
-
-typedef struct {
     /** TLV tag and len; tag equals
     *  WMITLV_TAG_STRUC_wmi_ctrl_path_stats_event_fixed_param */
     A_UINT32 tlv_header;
@@ -31212,20 +31195,6 @@ typedef enum _WMI_TWT_COMMAND_T {
 /* 1 means PM_RESPONDER_MODE supported, 0 means not supported */
 #define TWT_FLAGS_GET_PM_RESPONDER_MODE(flag)      WMI_GET_BITS(flag, 15, 1)
 #define TWT_FLAGS_SET_PM_RESPONDER_MODE(flag, val) WMI_SET_BITS(flag, 15, 1, val)
-
-typedef struct {
-    A_UINT32 tlv_header;    /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_twt_ack_event_fixed_param */
-    A_UINT32 vdev_id;       /* VDEV identifier */
-    wmi_mac_addr peer_macaddr; /* peer MAC address */
-    A_UINT32 dialog_id;     /* TWT dialog ID */
-    A_UINT32 twt_cmd;       /* TWT command for which this ack is sent */
-    A_UINT32 status;        /* Status code corresponding to twt_cmd.
-                             * This status field contains a value from the
-                             * status enum corresponding to the twt_cmd type
-                             * (WMI_ADD_TWT_STATUS_T, WMI_DEL_TWT_STATUS_T,
-                             * WMI_PAUSE_TWT_STATUS_T, etc.)
-                             */
-} wmi_twt_ack_event_fixed_param;
 
 typedef struct {
     A_UINT32 tlv_header;    /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wmi_twt_ack_event_fixed_param */
