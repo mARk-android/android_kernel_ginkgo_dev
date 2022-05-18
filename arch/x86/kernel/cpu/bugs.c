@@ -1339,6 +1339,14 @@ static int ib_prctl_set(struct task_struct *task, unsigned long ctrl)
 		    spectre_v2_user_stibp == SPECTRE_V2_USER_NONE)
 			return 0;
 		/*
+		 * Indirect branch speculation is always disabled in strict
+		 * mode. It can neither be enabled if it was force-disabled
+		 * by a  previous prctl call.
+
+		 */
+		if (spectre_v2_user_ibpb == SPECTRE_V2_USER_STRICT ||
+		    spectre_v2_user_stibp == SPECTRE_V2_USER_STRICT ||
+		    spectre_v2_user_stibp == SPECTRE_V2_USER_STRICT_PREFERRED ||
 		 * With strict mode for both IBPB and STIBP, the instruction
 		 * code paths avoid checking this task flag and instead,
 		 * unconditionally run the instruction. However, STIBP and IBPB
@@ -1353,7 +1361,7 @@ static int ib_prctl_set(struct task_struct *task, unsigned long ctrl)
 		 * spectre_v2_user_ibpb == SPECTRE_V2_USER_SECCOMP and
 		 * spectre_v2_user_stibp == SPECTRE_V2_USER_STRICT_PREFERRED.
 		 */
-		if (!is_spec_ib_user_controlled() ||
+		(!is_spec_ib_user_controlled() ||
 		    task_spec_ib_force_disable(task))
 			return -EPERM;
 

@@ -701,7 +701,7 @@ again:
 
 			goto out;
 		}
-		
+
 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
 		key->shared.inode = inode;
 		key->shared.pgoff = page_to_pgoff(tail);
