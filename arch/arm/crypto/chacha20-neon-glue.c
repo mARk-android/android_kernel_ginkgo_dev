@@ -1,7 +1,7 @@
 /*
- * ChaCha20 256-bit cipher algorithm, RFC7539, arm64 NEON functions
+ * ChaCha20 256-bit cipher algorithm, RFC7539, ARM NEON functions
  *
- * Copyright (C) 2016 - 2017 Linaro, Ltd. <ard.biesheuvel@linaro.org>
+ * Copyright (C) 2016 Linaro, Ltd. <ard.biesheuvel@linaro.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -55,7 +55,6 @@ static void chacha20_doneon(u32 *state, u8 *dst, const u8 *src,
 		chacha20_block_xor_neon(state, buf, buf);
 		memcpy(dst, buf, bytes);
 	}
-	kernel_neon_end();
 }
 
 static int chacha20_neon(struct skcipher_request *req)
@@ -66,13 +65,14 @@ static int chacha20_neon(struct skcipher_request *req)
 	u32 state[16];
 	int err;
 
-	if (!may_use_simd() || req->cryptlen <= CHACHA20_BLOCK_SIZE)
+	if (req->cryptlen <= CHACHA20_BLOCK_SIZE || !may_use_simd())
 		return crypto_chacha20_crypt(req);
 
-	err = skcipher_walk_virt(&walk, req, false);
+	err = skcipher_walk_virt(&walk, req, true);
 
 	crypto_chacha20_init(state, ctx, walk.iv);
 
+	kernel_neon_begin();
 	while (walk.nbytes > 0) {
 		unsigned int nbytes = walk.nbytes;
 
@@ -83,6 +83,7 @@ static int chacha20_neon(struct skcipher_request *req)
 				nbytes);
 		err = skcipher_walk_done(&walk, walk.nbytes - nbytes);
 	}
+	kernel_neon_end();
 
 	return err;
 }
@@ -107,7 +108,7 @@ static struct skcipher_alg alg = {
 
 static int __init chacha20_simd_mod_init(void)
 {
-	if (!(elf_hwcap & HWCAP_ASIMD))
+	if (!(elf_hwcap & HWCAP_NEON))
 		return -ENODEV;
 
 	return crypto_register_skcipher(&alg);
