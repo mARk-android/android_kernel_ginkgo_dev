@@ -16,9 +16,13 @@
 #include <asm/unaligned.h>
 #include <crypto/chacha20.h>
 
-static void chacha20_permute(u32 *x)
+void chacha20_block(u32 *state, u32 *stream)
 {
+	u32 x[16], *out = stream;
 	int i;
+
+	for (i = 0; i < ARRAY_SIZE(x); i++)
+		x[i] = state[i];
 
 	for (i = 0; i < 20; i += 2) {
 		x[0]  += x[4];    x[12] = rol32(x[12] ^ x[0],  16);
@@ -82,7 +86,7 @@ void chacha20_block(u32 *state, u8 *stream)
 	chacha20_permute(x);
 
 	for (i = 0; i < ARRAY_SIZE(x); i++)
-		put_unaligned_le32(x[i] + state[i], &stream[i * sizeof(u32)]);
+		out[i] = cpu_to_le32(x[i] + state[i]);
 
 	state[12]++;
 }
