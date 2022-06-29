@@ -28,26 +28,24 @@
 #include <asm/neon.h>
 #include <asm/simd.h>
 
-asmlinkage void chacha_block_xor_neon(const u32 *state, u8 *dst, const u8 *src,
-				      int nrounds);
-asmlinkage void chacha_4block_xor_neon(const u32 *state, u8 *dst, const u8 *src,
-				       int nrounds);
-asmlinkage void hchacha_block_neon(const u32 *state, u32 *out, int nrounds);
+asmlinkage void chacha20_block_xor_neon(u32 *state, u8 *dst, const u8 *src);
+asmlinkage void chacha20_4block_xor_neon(u32 *state, u8 *dst, const u8 *src);
+asmlinkage void hchacha20_block_neon(const u32 *state, u32 *out);
 
-static void chacha_doneon(u32 *state, u8 *dst, const u8 *src,
-			  unsigned int bytes, int nrounds)
+static void chacha20_doneon(u32 *state, u8 *dst, const u8 *src,
+			    unsigned int bytes)
 {
 	u8 buf[CHACHA_BLOCK_SIZE];
 
 	while (bytes >= CHACHA_BLOCK_SIZE * 4) {
-		chacha_4block_xor_neon(state, dst, src, nrounds);
+		chacha20_4block_xor_neon(state, dst, src);
 		bytes -= CHACHA_BLOCK_SIZE * 4;
 		src += CHACHA_BLOCK_SIZE * 4;
 		dst += CHACHA_BLOCK_SIZE * 4;
 		state[12] += 4;
 	}
 	while (bytes >= CHACHA_BLOCK_SIZE) {
-		chacha_block_xor_neon(state, dst, src, nrounds);
+		chacha20_block_xor_neon(state, dst, src);
 		bytes -= CHACHA_BLOCK_SIZE;
 		src += CHACHA_BLOCK_SIZE;
 		dst += CHACHA_BLOCK_SIZE;
@@ -55,13 +53,13 @@ static void chacha_doneon(u32 *state, u8 *dst, const u8 *src,
 	}
 	if (bytes) {
 		memcpy(buf, src, bytes);
-		chacha_block_xor_neon(state, buf, buf, nrounds);
+		chacha20_block_xor_neon(state, buf, buf);
 		memcpy(dst, buf, bytes);
 	}
 }
 
-static int chacha_neon_stream_xor(struct skcipher_request *req,
-				  struct chacha_ctx *ctx, u8 *iv)
+static int chacha20_neon_stream_xor(struct skcipher_request *req,
+				    struct chacha_ctx *ctx, u8 *iv)
 {
 	struct skcipher_walk walk;
 	u32 state[16];
@@ -78,8 +76,8 @@ static int chacha_neon_stream_xor(struct skcipher_request *req,
 			nbytes = round_down(nbytes, walk.stride);
 
 		kernel_neon_begin();
-		chacha_doneon(state, walk.dst.virt.addr, walk.src.virt.addr,
-			      nbytes, ctx->nrounds);
+		chacha20_doneon(state, walk.dst.virt.addr, walk.src.virt.addr,
+				nbytes);
 		kernel_neon_end();
 		err = skcipher_walk_done(&walk, walk.nbytes - nbytes);
 	}
@@ -87,7 +85,7 @@ static int chacha_neon_stream_xor(struct skcipher_request *req,
 	return err;
 }
 
-static int chacha_neon(struct skcipher_request *req)
+static int chacha20_neon(struct skcipher_request *req)
 {
 	struct crypto_skcipher *tfm = crypto_skcipher_reqtfm(req);
 	struct chacha_ctx *ctx = crypto_skcipher_ctx(tfm);
@@ -95,10 +93,10 @@ static int chacha_neon(struct skcipher_request *req)
 	if (req->cryptlen <= CHACHA_BLOCK_SIZE || !may_use_simd())
 		return crypto_chacha_crypt(req);
 
-	return chacha_neon_stream_xor(req, ctx, req->iv);
+	return chacha20_neon_stream_xor(req, ctx, req->iv);
 }
 
-static int xchacha_neon(struct skcipher_request *req)
+static int xchacha20_neon(struct skcipher_request *req)
 {
 	struct crypto_skcipher *tfm = crypto_skcipher_reqtfm(req);
 	struct chacha_ctx *ctx = crypto_skcipher_ctx(tfm);
@@ -112,13 +110,12 @@ static int xchacha_neon(struct skcipher_request *req)
 	crypto_chacha_init(state, ctx, req->iv);
 
 	kernel_neon_begin();
-	hchacha_block_neon(state, subctx.key, ctx->nrounds);
+	hchacha20_block_neon(state, subctx.key);
 	kernel_neon_end();
-	subctx.nrounds = ctx->nrounds;
 
 	memcpy(&real_iv[0], req->iv + 24, 8);
 	memcpy(&real_iv[8], req->iv + 16, 8);
-	return chacha_neon_stream_xor(req, &subctx, real_iv);
+	return chacha20_neon_stream_xor(req, &subctx, real_iv);
 }
 
 static struct skcipher_alg algs[] = {
@@ -136,8 +133,8 @@ static struct skcipher_alg algs[] = {
 		.chunksize		= CHACHA_BLOCK_SIZE,
 		.walksize		= 4 * CHACHA_BLOCK_SIZE,
 		.setkey			= crypto_chacha20_setkey,
-		.encrypt		= chacha_neon,
-		.decrypt		= chacha_neon,
+		.encrypt		= chacha20_neon,
+		.decrypt		= chacha20_neon,
 	}, {
 		.base.cra_name		= "xchacha20",
 		.base.cra_driver_name	= "xchacha20-neon",
@@ -152,12 +149,12 @@ static struct skcipher_alg algs[] = {
 		.chunksize		= CHACHA_BLOCK_SIZE,
 		.walksize		= 4 * CHACHA_BLOCK_SIZE,
 		.setkey			= crypto_chacha20_setkey,
-		.encrypt		= xchacha_neon,
-		.decrypt		= xchacha_neon,
+		.encrypt		= xchacha20_neon,
+		.decrypt		= xchacha20_neon,
 	}
 };
 
-static int __init chacha_simd_mod_init(void)
+static int __init chacha20_simd_mod_init(void)
 {
 	if (!(elf_hwcap & HWCAP_NEON))
 		return -ENODEV;
@@ -165,15 +162,14 @@ static int __init chacha_simd_mod_init(void)
 	return crypto_register_skciphers(algs, ARRAY_SIZE(algs));
 }
 
-static void __exit chacha_simd_mod_fini(void)
+static void __exit chacha20_simd_mod_fini(void)
 {
 	crypto_unregister_skciphers(algs, ARRAY_SIZE(algs));
 }
 
-module_init(chacha_simd_mod_init);
-module_exit(chacha_simd_mod_fini);
+module_init(chacha20_simd_mod_init);
+module_exit(chacha20_simd_mod_fini);
 
-MODULE_DESCRIPTION("ChaCha and XChaCha stream ciphers (NEON accelerated)");
 MODULE_AUTHOR("Ard Biesheuvel <ard.biesheuvel@linaro.org>");
 MODULE_LICENSE("GPL v2");
 MODULE_ALIAS_CRYPTO("chacha20");
