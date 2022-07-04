@@ -68,7 +68,7 @@ static int chacha20_neon(struct skcipher_request *req)
 	if (!may_use_simd() || req->cryptlen <= CHACHA20_BLOCK_SIZE)
 		return crypto_chacha20_crypt(req);
 
-	err = skcipher_walk_virt(&walk, req, false);
+	err = skcipher_walk_virt(&walk, req, true);
 
 	crypto_chacha20_init(state, ctx, walk.iv);
 
